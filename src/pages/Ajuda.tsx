@@ -5,7 +5,7 @@ import CabecalhoInterno from '../components/CabecalhoInterno';
 import ImagemProduto from '../components/ImagemProduto';
 import { MarcaV } from '../components/Logo';
 import { useLoja } from '../context/LojaContext';
-import { responder, type Resposta } from '../services/assistente';
+import { conversar, type Resposta } from '../services/assistente';
 import { formatarPreco } from '../services/catalogo';
 
 interface Mensagem extends Partial<Resposta> {
@@ -56,25 +56,27 @@ export default function Ajuda() {
   const [tema, setTema] = useState<Tema>('Perguntas frequentes');
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [texto, setTexto] = useState('');
+  const [digitando, setDigitando] = useState(false);
   const [inicio] = useState(agora);
   const fim = useRef<HTMLDivElement>(null);
   const faq = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (mensagens.length) fim.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [mensagens]);
+  }, [mensagens, digitando]);
 
   function enviar(pergunta: string) {
     const limpa = pergunta.trim();
-    if (!limpa) return;
-    const hora = agora();
-    const resposta = responder(limpa, { pontos, pedidos });
-    setMensagens((m) => [
-      ...m,
-      { id: m.length, de: 'cliente', texto: limpa, hora },
-      { id: m.length + 1, de: 'vini', hora, ...resposta },
-    ]);
+    if (!limpa || digitando) return;
+    const nova = { id: mensagens.length, de: 'cliente' as const, texto: limpa, hora: agora() };
+    const historico = [...mensagens, nova].map(({ de, texto }) => ({ de, texto }));
+    setMensagens((m) => [...m, nova]);
     setTexto('');
+    setDigitando(true);
+    conversar(historico, { pontos, pedidos }).then((resposta) => {
+      setMensagens((m) => [...m, { id: m.length, de: 'vini', hora: agora(), ...resposta }]);
+      setDigitando(false);
+    });
   }
 
   const temas = Object.keys(perguntas) as Tema[];
@@ -181,6 +183,16 @@ export default function Ajuda() {
               </div>
             </div>
           ),
+        )}
+        {digitando && (
+          <div className="balao-vini">
+            <img src="/img/vini/avatar.png" alt="" className="avatar-vini avatar-vini--pequeno" />
+            <p className="balao balao--digitando" aria-label="Vini está digitando">
+              <span />
+              <span />
+              <span />
+            </p>
+          </div>
         )}
         <div ref={fim} />
       </div>

@@ -5,6 +5,7 @@ import CartaoProduto from '../components/CartaoProduto';
 import Carrossel from '../components/Carrossel';
 import TituloSecao from '../components/TituloSecao';
 import { banners, categorias, destaques, ofertasDaSemana, produtos } from '../data/catalogo';
+import { useArrasteMouse } from '../hooks/useArrasteMouse';
 
 const vantagens = [
   { Icone: Truck, titulo: 'Entrega rápida', texto: 'Receba em todo o Brasil', to: '/cesta' },
@@ -15,6 +16,8 @@ const vantagens = [
 const porId = (id: string) => produtos.find((p) => p.id === id)!;
 
 export default function Inicio() {
+  const arrasteCategorias = useArrasteMouse<HTMLElement>();
+
   return (
     <>
       <Cabecalho />
@@ -33,10 +36,10 @@ export default function Inicio() {
         ))}
       </section>
 
-      <section className="categorias" aria-label="Categorias">
+      <section className="categorias" aria-label="Categorias" {...arrasteCategorias}>
         {categorias.map((c) => (
-          <Link key={c.slug} to={`/categoria/${c.slug}`} className="categoria">
-            <img src={c.imagem} alt="" />
+          <Link key={c.slug} to={`/categoria/${c.slug}`} className="categoria" draggable={false}>
+            <img src={c.imagem} alt="" draggable={false} />
             <span>{c.nome}</span>
           </Link>
         ))}
@@ -60,11 +63,12 @@ export default function Inicio() {
       </section>
 
       <section className="destaques">
-        {destaques.map((id) => {
+        {destaques.map(({ id, selo }) => {
           const p = porId(id);
           return (
             <Link key={id} to={`/produto/${id}`} className="destaque">
               <img src={p.imagem} alt={p.nome} loading="lazy" />
+              <span className="destaque__selo">{selo}</span>
             </Link>
           );
         })}

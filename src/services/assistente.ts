@@ -1,9 +1,10 @@
 import { buscarLocal, formatarPreco, produtosEmOferta } from './catalogo';
+import { produtos } from '../data/catalogo';
 import { lojas } from '../data/lojas';
 import type { Pedido, Produto } from '../types';
 
-// Assistente virtual "Vini": respostas por palavra-chave, sem IA.
-// Pode ser trocado por um modelo de linguagem quando houver backend.
+// Assistente virtual "Vini": conversa com IA (Gemini, via /api/vini) e, se ela
+// não estiver disponível, cai nas respostas por palavra-chave abaixo.
 
 export interface Resposta {
   texto: string;
@@ -91,4 +92,36 @@ export function responder(texto: string, ctx: Contexto): Resposta {
     texto: 'Não entendi muito bem 🐾. Posso ajudar com pedidos, ofertas, pontos, lojas ou buscar um produto pelo nome.',
     link: { to: `/busca?q=${encodeURIComponent(texto)}`, rotulo: `Buscar "${texto}"` },
   };
+}
+
+const TEMPO_LIMITE_IA = 25000;
+
+export async function conversar(
+  historico: { de: 'cliente' | 'vini'; texto: string }[],
+  ctx: Contexto,
+): Promise<Resposta> {
+  try {
+    const r = await fetch('/api/vini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(TEMPO_LIMITE_IA),
+      body: JSON.stringify({
+        mensagens: historico,
+        contexto: {
+          pontos: ctx.pontos,
+          pedidos: ctx.pedidos.slice(0, 3).map(({ id, status, total, data }) => ({ id, status, total, data })),
+        },
+      }),
+    });
+    if (!r.ok) throw new Error(`IA indisponível (${r.status})`);
+    const json: { texto: string; produtos: string[]; link?: Resposta['link'] } = await r.json();
+    if (!json.texto) throw new Error('Resposta vazia');
+    return {
+      texto: json.texto,
+      produtos: json.produtos.map((id) => produtos.find((p) => p.id === id)).filter((p): p is Produto => !!p),
+      link: json.link,
+    };
+  } catch {
+    return responder(historico[historico.length - 1].texto, ctx);
+  }
 }

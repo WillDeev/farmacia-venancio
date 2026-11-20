@@ -450,21 +450,34 @@ img {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   border-radius: var(--raio-g);
+  align-items: flex-start;
+  transition: height 0.3s;
 }
 
 .carrossel__trilho::-webkit-scrollbar {
   display: none;
 }
 
+/* Faixa sendo arrastada com o mouse (Carrossel e useArrasteMouse). */
+.arrastando {
+  scroll-snap-type: none !important;
+  user-select: none;
+}
+
+.arrastando * {
+  cursor: grabbing;
+}
+
+/* Os banners têm proporções diferentes e texto na própria imagem: cada um aparece
+   inteiro, e a altura do trilho acompanha o banner ativo (ajustada no Carrossel). */
 .carrossel__slide {
   flex: 0 0 100%;
   scroll-snap-align: start;
 }
 
 .carrossel__slide img {
+  display: block;
   width: 100%;
-  aspect-ratio: 760 / 490;
-  object-fit: cover;
 }
 
 .carrossel__pontos {
@@ -494,7 +507,7 @@ img {
   position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  margin: 4px 18px 0;
+  margin: 16px 18px 0;
   padding: 12px 6px;
   border-radius: var(--raio);
   background: var(--branco);
@@ -534,16 +547,30 @@ img {
   line-height: 1.2;
 }
 
+/* Quantidade exata de categorias por tela; a rolagem para sempre em um item inteiro. */
 .categorias {
+  --por-tela: 5;
+  --gap: 4px;
   display: flex;
-  gap: 4px;
+  gap: var(--gap);
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 18px 12px 4px;
+  scroll-snap-type: x mandatory;
+  /* Margem lateral em vez de padding: o corte da rolagem fica rente aos itens. */
+  margin: 0 12px;
+  padding: 18px 0 4px;
+}
+
+@media (max-width: 400px) {
+  .categorias {
+    --por-tela: 4;
+  }
 }
 
 .categoria {
-  flex: 0 0 74px;
+  flex: 0 0 calc((100% - (var(--por-tela) - 1) * var(--gap)) / var(--por-tela));
+  min-width: 0;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -615,11 +642,34 @@ img {
   padding: 16px 16px 0;
 }
 
+.destaque {
+  position: relative;
+}
+
 .destaque img {
   width: 100%;
   aspect-ratio: 356 / 240;
   object-fit: cover;
   border-radius: var(--raio);
+}
+
+/* Aba no canto que cobre o selo impresso na imagem (até ~25% x 19% do card);
+   medidas em % para acompanhar o tamanho do card. */
+.destaque__selo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  height: 21%;
+  min-width: 27%;
+  padding: 0 8px;
+  border-radius: var(--raio) 0 var(--raio) 0;
+  background: var(--vermelho);
+  color: var(--branco);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ===== Produtos ===== */
@@ -656,13 +706,39 @@ img {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  background: linear-gradient(135deg, var(--azul-claro), #f6f9ff);
-  color: var(--azul);
+  gap: 6px;
+  background: var(--cat-fundo);
+  color: var(--cat-cor);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   padding: 6px;
+}
+
+.imagem-produto__icone {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--branco);
+  box-shadow: var(--sombra);
+}
+
+/* Miniaturas (cesta e chat): só o ícone, menor. */
+.itens-cesta__imagem .imagem-produto--vazia > span:last-child,
+.msg-produto .imagem-produto--vazia > span:last-child {
+  display: none;
+}
+
+.msg-produto .imagem-produto__icone {
+  width: 36px;
+  height: 36px;
+}
+
+.msg-produto .imagem-produto__icone svg {
+  width: 20px;
+  height: 20px;
 }
 
 .cartao-produto__nome {
@@ -1531,6 +1607,39 @@ img {
   border-radius: 16px 4px 16px 16px;
   background: var(--vermelho);
   color: var(--branco);
+}
+
+.balao--digitando {
+  flex-direction: row;
+  gap: 5px;
+  padding: 16px 18px;
+}
+
+.balao--digitando span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--texto-suave);
+  animation: digitando 1.2s infinite ease-in-out;
+}
+
+.balao--digitando span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.balao--digitando span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes digitando {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
 }
 
 .msg-cliente {
