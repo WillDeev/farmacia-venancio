@@ -1,6 +1,6 @@
 // Função da Vercel: POST /api/vini. Precisa da variável de ambiente GEMINI_API_KEY
 // (opcional: GEMINI_MODEL). Sem ela, responde 503 e o app usa as respostas fixas.
-import { responderComIA, type PedidoVini } from './_lib/vini';
+import { responderComIA, type PedidoVini } from './_lib/vini.js';
 
 export async function POST(request: Request) {
   const chave = process.env.GEMINI_API_KEY;

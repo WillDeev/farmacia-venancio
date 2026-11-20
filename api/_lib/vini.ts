@@ -1,7 +1,7 @@
 // Núcleo do Vini com IA (Google Gemini). Roda só no servidor: a chave nunca vai
 // para o navegador. Usado pela função da Vercel (api/vini.ts) e pelo Vite em dev.
-import { categorias, produtos } from '../../src/data/catalogo';
-import { lojas } from '../../src/data/lojas';
+import { categorias, produtos } from '../../src/data/catalogo.js';
+import { lojas } from '../../src/data/lojas.js';
 
 const MODELO_PADRAO = 'gemini-3.5-flash';
 const MAX_HISTORICO = 12;
