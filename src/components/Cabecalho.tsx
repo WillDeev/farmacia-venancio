@@ -34,10 +34,10 @@ export default function Cabecalho({ termo = '' }: { termo?: string }) {
           <ScanLine size={20} />
         </Link>
       </form>
-      <Link to="/favoritos" className="icone-botao" aria-label="Favoritos">
+      <Link to="/favoritos" className="icone-botao cabecalho__favoritos" aria-label="Favoritos">
         <Heart size={24} />
       </Link>
-      <Link to="/lembretes" className="icone-botao" aria-label="Lembretes de medicamentos">
+      <Link to="/lembretes" className="icone-botao cabecalho__lembretes" aria-label="Lembretes de medicamentos">
         <CalendarDays size={24} />
         {lembretes.length > 0 && <span className="ponto-notificacao" />}
       </Link>

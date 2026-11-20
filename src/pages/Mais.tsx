@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight, ClipboardList, Heart, MessageCircleQuestion, ShoppingBasket, Star } from 'lucide-react';
+import { CalendarDays, ChevronRight, ClipboardList, Heart, MessageCircleQuestion, Newspaper, ShoppingBasket, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Cabecalho from '../components/Cabecalho';
 
@@ -8,6 +8,7 @@ const opcoes = [
   { to: '/favoritos', rotulo: 'Favoritos', Icone: Heart },
   { to: '/lembretes', rotulo: 'Lembretes de medicamentos', Icone: CalendarDays },
   { to: '/venancio-mais', rotulo: 'Venancio+', Icone: Star },
+  { to: '/novidades', rotulo: 'Novidades do setor', Icone: Newspaper },
   { to: '/ajuda', rotulo: 'Ajuda com o Vini', Icone: MessageCircleQuestion },
 ];
 

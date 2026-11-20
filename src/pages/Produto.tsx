@@ -1,9 +1,10 @@
-import { AlertTriangle, Heart, Loader2, Minus, Plus } from 'lucide-react';
+import { AlertTriangle, ChevronDown, FileText, Heart, Loader2, Minus, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import CabecalhoInterno from '../components/CabecalhoInterno';
 import ImagemProduto from '../components/ImagemProduto';
 import { useLoja } from '../context/LojaContext';
+import { detalhes } from '../data/detalhes';
 import { descontoPercentual, formatarPreco, nomeCategoria, obterProduto } from '../services/catalogo';
 import type { Produto as TProduto } from '../types';
 
@@ -43,6 +44,7 @@ export default function Produto() {
 
   const desconto = descontoPercentual(produto);
   const bloqueado = produto.tarja === 'preta';
+  const info = detalhes[produto.id];
 
   return (
     <>
@@ -87,8 +89,76 @@ export default function Produto() {
           </div>
         )}
 
-        {produto.descricao && <p className="produto__descricao">{produto.descricao}</p>}
-        {produto.ean && <p className="texto-suave">Código de barras: {produto.ean}</p>}
+        {info?.intro.length ? (
+          <div className="produto__descricao">
+            {info.intro.map((p) => (
+              <p key={p}>{p}</p>
+            ))}
+          </div>
+        ) : (
+          produto.descricao && <p className="produto__descricao">{produto.descricao}</p>
+        )}
+
+        {info?.ficha.length ? (
+          <dl className="ficha">
+            {info.ficha.map(({ rotulo, valor }) => (
+              <div key={rotulo}>
+                <dt>{rotulo}</dt>
+                <dd>{valor}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          produto.ean && <p className="texto-suave">Código de barras: {produto.ean}</p>
+        )}
+
+        {info?.secoes.map((s, i) => (
+          <details key={s.titulo} className="detalhe" open={i === 0}>
+            <summary>
+              {s.titulo} <ChevronDown size={18} />
+            </summary>
+            {s.blocos.map((b, j) =>
+              b.tipo === 'p' ? (
+                <p key={j}>{b.texto}</p>
+              ) : (
+                <ul key={j}>
+                  {b.itens.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ),
+            )}
+          </details>
+        ))}
+
+        {info?.advertencia && (
+          <div className="advertencia-ms">
+            <FileText size={20} />
+            <p>
+              {info.advertencia}
+              {info.bula && (
+                <a href={info.bula} target="_blank" rel="noreferrer">
+                  Ler a bula (PDF)
+                </a>
+              )}
+            </p>
+          </div>
+        )}
+
+        {info?.faq.length ? (
+          <section className="produto__faq">
+            <h2>Perguntas frequentes</h2>
+            {info.faq.map(({ pergunta, resposta }) => (
+              <details key={pergunta} className="detalhe">
+                <summary>
+                  {pergunta} <ChevronDown size={18} />
+                </summary>
+                <p>{resposta}</p>
+              </details>
+            ))}
+          </section>
+        ) : null}
+
         {produto.precoSimulado && (
           <p className="fonte-dados">
             Dados e imagem: Open Beauty Facts (CC BY-SA). Preço de demonstração.

@@ -5,20 +5,31 @@ import { Link } from 'react-router-dom';
 interface Props {
   icone: ReactNode;
   titulo: string;
-  verTodos?: { to: string; rotulo?: string };
+  /** Com `to` vira link; com `onClick`, botão (ex.: trocar de aba na mesma página). */
+  verTodos?: { to?: string; onClick?: () => void; rotulo?: string };
 }
 
 export default function TituloSecao({ icone, titulo, verTodos }: Props) {
+  const conteudo = verTodos && (
+    <>
+      {verTodos.rotulo ?? 'Ver todos'} <ChevronRight size={16} />
+    </>
+  );
   return (
     <div className="titulo-secao">
       <h2>
         {icone}
         {titulo}
       </h2>
-      {verTodos && (
+      {verTodos?.to && (
         <Link to={verTodos.to} className="link-ver-todos">
-          {verTodos.rotulo ?? 'Ver todos'} <ChevronRight size={16} />
+          {conteudo}
         </Link>
+      )}
+      {verTodos?.onClick && (
+        <button type="button" onClick={verTodos.onClick} className="link-ver-todos">
+          {conteudo}
+        </button>
       )}
     </div>
   );

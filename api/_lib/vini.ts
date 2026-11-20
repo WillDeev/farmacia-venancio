@@ -3,7 +3,9 @@
 import { categorias, produtos } from '../../src/data/catalogo.js';
 import { lojas } from '../../src/data/lojas.js';
 
-const MODELO_PADRAO = 'gemini-3.5-flash';
+// Ordem de preferência; os "lite" são mais simples, mas têm cota própria.
+const MODELOS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-lite-latest'];
+const TEMPO_POR_MODELO = 8000;
 const MAX_HISTORICO = 12;
 const MAX_CARACTERES = 600;
 
@@ -38,6 +40,7 @@ PERSONALIDADE
 - Caloroso, simpático e prestativo, como um amigo que trabalha na farmácia. Você é um cachorro e pode brincar com isso de leve (um "au au" ou 🐾 de vez em quando), sem exagerar nem infantilizar.
 - Demonstre empatia de verdade: se a pessoa conta que está mal, cansada ou preocupada, acolha antes de responder.
 - Português do Brasil, natural e direto. Respostas curtas: 1 a 4 frases. No máximo 1 emoji por mensagem.
+- NUNCA use travessão (— ou –). Para separar ideias, use vírgula, ponto, dois-pontos ou parênteses.
 - Trate o cliente por "você". Nunca invente o nome dele.
 
 A MANU
@@ -84,36 +87,59 @@ const ESQUEMA = {
   required: ['texto', 'produtos'],
 };
 
+// Garantia caso o modelo ignore a regra: "a — b" vira "a, b".
+function semTravessao(texto: string) {
+  return texto.replace(/\s*[—–]\s*/g, ', ').replace(/,\s*([,.!?])/g, '$1').trim();
+}
+
 function contextoCliente({ pontos, pedidos }: PedidoVini['contexto']) {
   const lista = pedidos.length
     ? pedidos.map((p) => `#${p.id} de ${p.data.slice(0, 10)}, R$ ${p.total.toFixed(2)}, status "${p.status}"`).join('; ')
     : 'nenhum pedido ainda';
-  return `[Dados do cliente logado — não mostre isto literalmente] Pontos Venancio+: ${pontos}. Pedidos recentes: ${lista}.`;
+  return `[Dados do cliente logado; não mostre isto literalmente] Pontos Venancio+: ${pontos}. Pedidos recentes: ${lista}.`;
 }
 
-export async function responderComIA(pedido: PedidoVini, chave: string, modelo = MODELO_PADRAO): Promise<RespostaVini> {
+export async function responderComIA(pedido: PedidoVini, chave: string, modelo?: string): Promise<RespostaVini> {
   const historico = pedido.mensagens.slice(-MAX_HISTORICO).map((m) => ({
     role: m.de === 'cliente' ? 'user' : 'model',
     parts: [{ text: String(m.texto).slice(0, MAX_CARACTERES) }],
   }));
   if (historico.at(-1)?.role !== 'user') throw new Error('A última mensagem deve ser do cliente.');
 
-  const resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: `${INSTRUCOES}\n\n${contextoCliente(pedido.contexto)}` }] },
-      contents: historico,
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 2048,
-        thinkingConfig: { thinkingLevel: 'low' },
-        responseMimeType: 'application/json',
-        responseSchema: ESQUEMA,
-      },
-    }),
+  const corpo = JSON.stringify({
+    systemInstruction: { parts: [{ text: `${INSTRUCOES}\n\n${contextoCliente(pedido.contexto)}` }] },
+    contents: historico,
+    generationConfig: {
+      temperature: 0.8,
+      maxOutputTokens: 2048,
+      thinkingConfig: { thinkingLevel: 'low' },
+      responseMimeType: 'application/json',
+      responseSchema: ESQUEMA,
+    },
   });
-  if (!resposta.ok) throw new Error(`Gemini respondeu ${resposta.status}: ${(await resposta.text()).slice(0, 300)}`);
+
+  // A cota gratuita é diária e separada por modelo: se um esgotar (429), está fora
+  // do ar ou demora demais, tenta o próximo da lista.
+  const modelos = modelo ? [modelo, ...MODELOS.filter((m) => m !== modelo)] : MODELOS;
+  let resposta: Response | undefined;
+  let erro = '';
+  for (const m of modelos) {
+    try {
+      resposta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave },
+        body: corpo,
+        signal: AbortSignal.timeout(TEMPO_POR_MODELO),
+      });
+    } catch (e) {
+      erro = `${m}: ${e}`;
+      continue;
+    }
+    if (resposta.ok) break;
+    erro = `${m} respondeu ${resposta.status}: ${(await resposta.text()).slice(0, 300)}`;
+    if (resposta.status !== 429 && resposta.status !== 404 && resposta.status < 500) break;
+  }
+  if (!resposta?.ok) throw new Error(`Gemini falhou. Último erro: ${erro}`);
 
   const dados = await resposta.json();
   // Modelos com raciocínio podem devolver partes de "pensamento"; só interessa a resposta.
@@ -125,7 +151,7 @@ export async function responderComIA(pedido: PedidoVini, chave: string, modelo =
   // O modelo pode errar: só passam ids que existem e links internos.
   const ids = new Set(produtos.map((p) => p.id));
   return {
-    texto: String(json.texto ?? '').trim(),
+    texto: semTravessao(String(json.texto ?? '')),
     produtos: (json.produtos ?? []).filter((id) => ids.has(id)).slice(0, 3),
     link: json.link?.to?.startsWith('/') && json.link.rotulo ? { to: json.link.to, rotulo: json.link.rotulo } : undefined,
   };

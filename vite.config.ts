@@ -1,11 +1,11 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
-// Em dev, atende POST /api/vini com o mesmo código da função da Vercel.
-// A chave fica em .env.local (GEMINI_API_KEY), que não vai para o git.
-function viniDev(chave?: string, modelo?: string): Plugin {
+// Em dev, atende /api/vini e /api/novidades com o mesmo código das funções da Vercel.
+// A chave da IA fica em .env.local (GEMINI_API_KEY), que não vai para o git.
+function apiDev(chave?: string, modelo?: string): Plugin {
   return {
-    name: 'vini-dev',
+    name: 'api-dev',
     configureServer(server) {
       server.middlewares.use('/api/vini', async (req, res) => {
         const enviar = (status: number, corpo: unknown) => {
@@ -22,7 +22,18 @@ function viniDev(chave?: string, modelo?: string): Plugin {
           enviar(200, await responderComIA(JSON.parse(corpo), chave, modelo || undefined))
         } catch (e) {
           console.error(e)
-          enviar(502, { erro: 'Falha na IA' })
+          enviar(502, { erro: 'Falha na IA', detalhe: String(e) })
+        }
+      })
+      server.middlewares.use('/api/novidades', async (_req, res) => {
+        res.setHeader('Content-Type', 'application/json')
+        try {
+          const { buscarNovidades } = await server.ssrLoadModule('/api/_lib/novidades.ts')
+          res.end(JSON.stringify(await buscarNovidades()))
+        } catch (e) {
+          console.error(e)
+          res.statusCode = 502
+          res.end(JSON.stringify({ erro: 'Não foi possível carregar as novidades', detalhe: String(e) }))
         }
       })
     },
@@ -33,6 +44,6 @@ function viniDev(chave?: string, modelo?: string): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
-    plugins: [react(), viniDev(env.GEMINI_API_KEY, env.GEMINI_MODEL)],
+    plugins: [react(), apiDev(env.GEMINI_API_KEY, env.GEMINI_MODEL)],
   }
 })

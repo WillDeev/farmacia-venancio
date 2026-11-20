@@ -18,6 +18,30 @@ export interface Produto {
   precoSimulado?: boolean;
 }
 
+/** Informações completas da página do produto (ver scripts/importar-detalhes.mjs). */
+export interface DetalhesProduto {
+  intro: string[];
+  secoes: { titulo: string; blocos: ({ tipo: 'p'; texto: string } | { tipo: 'lista'; itens: string[] })[] }[];
+  faq: { pergunta: string; resposta: string }[];
+  ficha: { rotulo: string; valor: string }[];
+  /** Advertência do Ministério da Saúde (medicamentos). */
+  advertencia?: string;
+  /** PDF da bula (medicamentos). */
+  bula?: string;
+}
+
+/** Notícia do hub de novidades (vem de /api/novidades). */
+export interface Novidade {
+  titulo: string;
+  link: string;
+  data: string; // ISO
+  fonte: string;
+  tema: 'varejo' | 'saude' | 'anvisa';
+  categoria?: string;
+  imagem?: string;
+  resumo?: string;
+}
+
 export interface Categoria {
   slug: string;
   nome: string;

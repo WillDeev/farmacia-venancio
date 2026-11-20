@@ -42,6 +42,7 @@ interface ItemResgate {
 export default function VenancioMais() {
   const { pontos, extrato, resgatar } = useLoja();
   const [aba, setAba] = useState<Aba>('experiencias');
+  const [todasExperiencias, setTodasExperiencias] = useState(false);
   const [verExtrato, setVerExtrato] = useState(false);
   const [confirmar, setConfirmar] = useState<ItemResgate | null>(null);
   const [aviso, setAviso] = useState('');
@@ -120,9 +121,12 @@ export default function VenancioMais() {
                 </span>
               }
               titulo="Experiências"
-              verTodos={{ to: '/venancio-mais', rotulo: 'Ver todas' }}
+              verTodos={{
+                onClick: () => setTodasExperiencias((v) => !v),
+                rotulo: todasExperiencias ? 'Ver menos' : 'Ver todas',
+              }}
             />
-            <div className="lista-horizontal">
+            <div className={todasExperiencias ? 'grade-experiencias' : 'lista-horizontal'}>
               {experiencias.map((x) => {
                 const Icone = iconeExperiencia[x.icone];
                 return (
@@ -153,7 +157,12 @@ export default function VenancioMais() {
             <TituloSecao
               icone={<ShoppingBag size={28} className="texto-vermelho" />}
               titulo="Resgate produtos"
-              verTodos={{ to: '/venancio-mais' }}
+              verTodos={{
+                onClick: () => {
+                  setAba('produtos');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+              }}
             />
             {listaResgates}
           </section>

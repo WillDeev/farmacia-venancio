@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import BarraCesta from './BarraCesta';
+import BotaoVini from './BotaoVini';
 import NavInferior from './NavInferior';
 
 // Telas que ocupam a altura toda, sem a navegação inferior.
@@ -21,6 +22,8 @@ export default function Layout() {
       </main>
       {!cheia && (
         <>
+          {/* Na página do produto ele ficaria na frente do "Adicionar à cesta". */}
+          {!pathname.startsWith('/produto/') && <BotaoVini />}
           <BarraCesta />
           <NavInferior />
         </>

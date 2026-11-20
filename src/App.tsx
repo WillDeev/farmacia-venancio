@@ -9,6 +9,7 @@ import Lembretes from './pages/Lembretes';
 import ListaProdutos from './pages/ListaProdutos';
 import Lojas from './pages/Lojas';
 import Mais from './pages/Mais';
+import Novidades from './pages/Novidades';
 import Pedidos from './pages/Pedidos';
 import Produto from './pages/Produto';
 import VenancioMais from './pages/VenancioMais';
@@ -46,6 +47,7 @@ const router = createBrowserRouter([
       { path: '/pedidos', element: <Pedidos /> },
       { path: '/favoritos', element: <Favoritos /> },
       { path: '/lembretes', element: <Lembretes /> },
+      { path: '/novidades', element: <Novidades /> },
       { path: '*', element: <ListaProdutos titulo="Página não encontrada" produtos={[]} vazio="Esta página não existe." /> },
     ],
   },
